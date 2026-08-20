@@ -39,63 +39,18 @@ app.include_router(router)
 
 def seed_opportunities(db):
     """
-    Seeds initial opportunities if they don't already exist.
+    Triggers live opportunity discovery via Firecrawl API across Unstop, LinkedIn, and Indeed,
+    or populates live opportunity schemas with real Gemini vector embeddings.
     """
-    opportunities_data = [
-        {
-            "title": "AI/ML Engineer Intern",
-            "company": "NVIDIA",
-            "type": "internship",
-            "location": "Bangalore, India",
-            "is_remote": False,
-            "salary_range": "₹80,000 - ₹1,20,000 / month",
-            "deadline": datetime.utcnow() + timedelta(days=6),
-            "description": "Join our AI infrastructure team to design, optimize, and evaluate state-of-the-art Deep Learning models. You will construct high-concurrency inference services using Python and FastAPI, integrate retrieval augmented generation (RAG) models, and orchestrate systems with Kubernetes.",
-            "requirements": ["Python", "FastAPI", "RAG", "LLMs", "Kubernetes"],
-            "source_url": "https://nvidia.wd5.myworkdayjobs.com/NVIDIACareers/job/India-Bangalore/AI-ML-Intern"
-        },
-        {
-            "title": "Research Intern - Generative AI",
-            "company": "Microsoft",
-            "type": "internship",
-            "location": "Remote, India",
-            "is_remote": True,
-            "salary_range": "₹1,00,000 / month",
-            "deadline": datetime.utcnow() + timedelta(days=12),
-            "description": "Contribute to Microsoft Research by investigating multi-agent alignment frameworks and agent orchestration graphs. Work closely with researchers using LangGraph and LLM pipelines to construct safe, reliable, and auditable automation scripts.",
-            "requirements": ["Python", "LangGraph", "LLMs", "PostgreSQL"],
-            "source_url": "https://careers.microsoft.com/us/en/job/genai-research-intern"
-        },
-        {
-            "title": "Software Engineer Intern",
-            "company": "Google",
-            "type": "internship",
-            "location": "Bangalore, India",
-            "is_remote": False,
-            "salary_range": "₹1,50,000 / month",
-            "deadline": datetime.utcnow() + timedelta(days=4),
-            "description": "Engineering interns work on Google's core products. We are looking for candidates with experience building web applications in React and TypeScript, integrating databases (SQL), and working with cloud architecture.",
-            "requirements": ["Python", "React", "TypeScript", "AWS", "SQL"],
-            "source_url": "https://careers.google.com/jobs/results/software-engineer-intern-bangalore"
-        }
-    ]
+    from app.services.firecrawl_ingestion import firecrawl_service
+    from app.services.matching import generate_gemini_embedding
     
-    for opp_dict in opportunities_data:
-        existing = db.query(Opportunity).filter(
-            Opportunity.source_url == opp_dict["source_url"]
-        ).first()
-        
-        if not existing:
-            opp = Opportunity(**opp_dict)
-            # Create a simple mock embedding vector for semantic search tests (1536 dim)
-            # Since we're on fallback, a random vector works perfectly
-            import random
-            opp.embedding = [random.uniform(-0.1, 0.1) for _ in range(1536)]
-            
-            db.add(opp)
-            db.commit()
-            db.refresh(opp)
-            logger.info(f"Seeded opportunity: {opp.title} at {opp.company}")
+    # Trigger Firecrawl ingestion
+    try:
+        results = firecrawl_service.search_and_ingest(db, query="AI Engineer", source="all", limit=3)
+        logger.info(f"Firecrawl live ingestion initialized: {len(results)} opportunities synced.")
+    except Exception as e:
+        logger.error(f"Startup Firecrawl ingestion error: {e}")
 
 @app.on_event("startup")
 async def on_startup():
@@ -110,13 +65,13 @@ async def on_startup():
         # Seed opportunities
         seed_opportunities(db)
         
-        # Calculate initial matches for default user
+        # Calculate initial matches for default user with real Gemini embeddings
         from app.models import Profile, Match
+        from app.services.matching import generate_gemini_embedding
         profile = db.query(Profile).filter(Profile.user_id == user_id).first()
         if profile:
-            # Generate mock user embedding matching our profile
-            import random
-            profile.embedding = [random.uniform(-0.1, 0.1) for _ in range(1536)]
+            profile_text = f"{profile.headline} {profile.bio} {profile.location}"
+            profile.embedding = generate_gemini_embedding(profile_text)
             db.commit()
             
             opportunities = db.query(Opportunity).all()

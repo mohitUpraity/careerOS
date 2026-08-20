@@ -133,8 +133,9 @@ class FirecrawlIngestionService:
                 source_url=source_url,
                 posted_at=datetime.utcnow()
             )
-            # Generate 1536-dim mock vector embedding for semantic search
-            opp.embedding = [random.uniform(-0.1, 0.1) for _ in range(1536)]
+            # Generate real Gemini vector embedding for semantic search
+            from app.services.matching import generate_gemini_embedding
+            opp.embedding = generate_gemini_embedding(f"{opp.title} {opp.company} {opp.description}")
 
             db.add(opp)
             db.commit()
