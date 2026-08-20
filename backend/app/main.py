@@ -17,22 +17,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for React Dev server and Vercel origins
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8080",
-    "https://career-os.vercel.app",
-    "https://careeros-frontend.vercel.app",
-]
-
+# Enable universal CORS for Vercel, localhost, and external clients
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
