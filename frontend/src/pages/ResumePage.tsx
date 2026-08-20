@@ -30,8 +30,18 @@ export const ResumePage: React.FC = () => {
     ...tailoredVersions
   ];
 
-  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
-  const selectedVersion = allResumes.find(r => r.id === (localSelectedId || allResumes[0]?.id)) || allResumes[0];
+  const defaultFallbackResume = {
+    id: 'baseline-1',
+    title: 'Fullstack AI Engineer CV',
+    atsScore: 88,
+    lastUpdated: new Date().toLocaleDateString(),
+    isBaseline: true,
+    targetCompany: undefined,
+    diffSummary: undefined,
+    content: { skills: ['Python', 'FastAPI', 'React', 'LangGraph', 'ArmorIQ'] }
+  };
+
+  const selectedVersion = allResumes.find(r => r.id === (localSelectedId || allResumes[0]?.id)) || allResumes[0] || defaultFallbackResume;
 
   return (
     <div className="space-y-6">
@@ -52,7 +62,7 @@ export const ResumePage: React.FC = () => {
             key={res.id}
             onClick={() => setLocalSelectedId(res.id)}
             className={`glass-panel p-5 rounded-2xl border transition-all cursor-pointer ${
-              selectedVersion.id === res.id
+              selectedVersion?.id === res.id
                 ? 'border-indigo-500/60 bg-indigo-500/10 shadow-glow'
                 : 'border-border-subtle hover:border-indigo-500/30'
             }`}
@@ -84,7 +94,7 @@ export const ResumePage: React.FC = () => {
       </div>
 
       {/* Side-by-Side Diff View */}
-      {selectedVersion.diffSummary && (
+      {selectedVersion?.diffSummary && (
         <div className="glass-panel p-6 rounded-2xl border border-border-subtle space-y-4">
           <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <h3 className="text-sm font-mono font-bold uppercase tracking-wider text-gray-200 flex items-center gap-2">
