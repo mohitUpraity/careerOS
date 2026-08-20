@@ -26,6 +26,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check endpoints for Render health checks
+@app.get("/health")
+@app.get("/healthz")
+@app.head("/health")
+@app.head("/healthz")
+@app.head("/")
+def health_check_root():
+    return {"status": "healthy", "service": "CareerOS Backend API"}
+
 app.include_router(router)
 
 def seed_opportunities(db):
