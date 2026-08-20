@@ -12,29 +12,29 @@ This tracking document defines every stage of the multi-agent pipeline, from opp
 
 ---
 
-## 🕷️ Phase 2: Opportunity Collecting & Ingestion Pipeline `[PENDING]`
-- [ ] Connect `DiscoveryAgent` to Firecrawl API (`/v1/search` & `/v1/scrape`) with live `FIRECRAWL_API_KEY`.
-- [ ] Ingest live job & hackathon listings from **Unstop**, **LinkedIn**, and **Indeed**.
-- [ ] Deduplicate ingested records by `source_url` and store in `Opportunity` table.
+## 🕷️ Phase 2: Opportunity Collecting & Ingestion Pipeline `[COMPLETED]`
+- [x] Connect `DiscoveryAgent` to Firecrawl API (`/v1/search` & `/v1/scrape`) with live `FIRECRAWL_API_KEY`.
+- [x] Ingest live job & hackathon listings from **Unstop**, **LinkedIn**, and **Indeed**.
+- [x] Deduplicate ingested records by `source_url` and store in `Opportunity` table.
 
 ---
 
-## 🧬 Phase 3: ATS Matching & Semantic Vector Retrieval `[PENDING]`
-- [ ] Connect `MatchingAgent` to Google Gemini `text-embedding-004` API to generate 768/1536-dim vector embeddings for profile & JDs.
-- [ ] Calculate real mathematical Cosine Similarity across skills, experience, and domain relevance.
-- [ ] Save top match records to `Match` table and trigger SSE updates (`agent.matched`).
+## 🧬 Phase 3: ATS Matching & Semantic Vector Retrieval `[COMPLETED]`
+- [x] Connect `MatchingAgent` to Google Gemini `text-embedding-004` API to generate 768/1536-dim vector embeddings for profile & JDs.
+- [x] Calculate real mathematical Cosine Similarity across skills, experience, and domain relevance.
+- [x] Save top match records to `Match` table and trigger SSE updates (`agent.matched`).
 
 ---
 
-## 📄 Phase 4: Resume Tailoring & Versioning Engine `[PENDING]`
-- [ ] Connect `ResumeAgent` to **Groq (`llama-3.3-70b-versatile`)** to analyze ATS keyword gaps against target JD.
-- [ ] Rewrite candidate resume bullet points with action verbs without fabricating false experience.
-- [ ] Save new `ResumeVersion` to DB with diff summary and updated ATS score.
+## 📄 Phase 4: Resume Tailoring & Versioning Engine `[COMPLETED]`
+- [x] Connect `ResumeAgent` to **Groq (`llama-3.3-70b-versatile`)** to analyze ATS keyword gaps against target JD.
+- [x] Rewrite candidate resume bullet points with action verbs without fabricating false experience.
+- [x] Save new `ResumeVersion` to DB with diff summary and updated ATS score.
 
 ---
 
-## 🛡️ Phase 5: ArmorIQ Scope Enforcement & Submission Intercept `[PENDING]`
-- [ ] Intercept `ApplicationAgent.submit_application()` non-keyword scope violation.
-- [ ] Log `BLOCK` decision to `AuditEvent` table and broadcast SSE `tool.blocked` event.
-- [ ] Pause workflow and await explicit human-in-the-loop approval via `POST /api/applications/{id}/approve`.
-- [ ] Complete submission upon user approval and update `Application` status to `"Submitted"`.
+## 🛡️ Phase 5: ArmorIQ Scope Enforcement & Submission Intercept `[COMPLETED]`
+- [x] Intercept `ApplicationAgent.submit_application()` non-keyword scope violation.
+- [x] Log `BLOCK` decision to `AuditEvent` table and broadcast SSE `tool.blocked` event.
+- [x] Pause workflow and await explicit human-in-the-loop approval via `POST /api/applications/{id}/approve`.
+- [x] Complete submission upon user approval and update `Application` status to `"Submitted"`.
