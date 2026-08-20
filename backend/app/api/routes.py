@@ -348,6 +348,31 @@ def get_security_events(db: Session = Depends(get_db)):
         })
     return formatted
 
+# --- Real AI Agent Chat Terminal ---
+@router.post("/chat")
+def chat_with_commander(data: Dict[str, Any], db: Session = Depends(get_db)):
+    """
+    Sends natural language prompt to Commander agent, executed via real Groq (Llama-3.3-70B) or Gemini LLMs.
+    """
+    from app.services.llm_provider import llm_service
+    user_id = get_default_user_id(db)
+    message = data.get("message", "")
+    
+    context = {
+        "user_id": user_id,
+        "available_tools": ["search_jobs", "analyze_resume", "create_resume_version", "prepare_application", "submit_application"],
+        "governance": "ArmorIQ RSA 2048-bit"
+    }
+    
+    result = llm_service.generate_subagent_reasoning("Commander", message, context)
+    return {
+        "status": "success",
+        "sender": "Commander",
+        "message": result.get("output", f"Executed action for '{message}'."),
+        "provider": result.get("provider", "Groq"),
+        "model": result.get("model", "llama-3.3-70b-versatile")
+    }
+
 # --- Helper JSON serializing ---
 def json_dumps(obj: Any) -> str:
     import json

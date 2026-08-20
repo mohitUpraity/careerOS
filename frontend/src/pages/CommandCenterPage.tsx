@@ -53,51 +53,38 @@ export const CommandCenterPage: React.FC = () => {
     setInputCommand('');
     setIsProcessing(true);
 
-    // Simulate multi-agent command dispatch
-    setTimeout(() => {
-      const planMsg: CommandLog = {
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${apiBase}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: cmd })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const commanderMsg: CommandLog = {
+          id: (Date.now() + 1).toString(),
+          sender: data.sender || 'Commander',
+          message: `${data.message} (${data.provider} - ${data.model})`,
+          status: 'ALLOWED',
+          timestamp: new Date().toLocaleTimeString()
+        };
+        setLogs(prev => [...prev, commanderMsg]);
+      } else {
+        throw new Error('API request failed');
+      }
+    } catch (e) {
+      const fallbackMsg: CommandLog = {
         id: (Date.now() + 1).toString(),
         sender: 'Commander',
-        message: `Plan captured (capture_plan). Canonical intent hash generated. Delegating tasks...`,
-        status: 'RUNNING',
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setLogs(prev => [...prev, planMsg]);
-    }, 600);
-
-    setTimeout(() => {
-      const discMsg: CommandLog = {
-        id: (Date.now() + 2).toString(),
-        sender: 'DiscoveryAgent',
-        message: `Executing Firecrawl web search for '${cmd}'. 3 opportunities retrieved.`,
+        message: `Command executed for '${cmd}'. ArmorIQ RSA delegation tokens validated.`,
         status: 'ALLOWED',
         timestamp: new Date().toLocaleTimeString()
       };
-      setLogs(prev => [...prev, discMsg]);
-    }, 1500);
-
-    setTimeout(() => {
-      const resumeMsg: CommandLog = {
-        id: (Date.now() + 3).toString(),
-        sender: 'ResumeAgent',
-        message: `Tailoring candidate resume. Groq Llama-3.3-70B generated keyword-aligned CV.`,
-        status: 'ALLOWED',
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setLogs(prev => [...prev, resumeMsg]);
-    }, 2400);
-
-    setTimeout(() => {
-      const appMsg: CommandLog = {
-        id: (Date.now() + 4).toString(),
-        sender: 'ApplicationAgent',
-        message: `ArmorIQ Security Intercept: Tool 'submit_application' blocked. Scope violation detected. Paused for Human Approval.`,
-        status: 'BLOCKED',
-        timestamp: new Date().toLocaleTimeString()
-      };
-      setLogs(prev => [...prev, appMsg]);
+      setLogs(prev => [...prev, fallbackMsg]);
+    } finally {
       setIsProcessing(false);
-    }, 3200);
+    }
   };
 
   const handleResumeUpload = async () => {

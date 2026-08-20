@@ -19,8 +19,7 @@ class FirecrawlIngestionService:
         Scrapes a single URL using Firecrawl API /v1/scrape.
         """
         if not self.api_key:
-            logger.info("FIRECRAWL_API_KEY not set. Using simulated Firecrawl extraction.")
-            return self._simulated_scrape(url)
+            raise ValueError("FIRECRAWL_API_KEY is not configured in .env environment variables.")
 
         headers = {
             "Content-Type": "application/json",
@@ -48,92 +47,97 @@ class FirecrawlIngestionService:
             }
         }
 
+        req = urllib.request.Request(
+            f"{self.base_url}/scrape",
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data.get("success"):
+                extract_data = data.get("data", {}).get("extract", {})
+                extract_data["source_url"] = url
+                return extract_data
+            else:
+                raise ValueError(f"Firecrawl API scrape failed for URL {url}")
+
+    def search_and_ingest(self, db, query: str = "AI Engineer", source: str = "all", limit: int = 5) -> List[Dict[str, Any]]:
+        """
+        Searches Firecrawl /v1/search for real opportunities across Unstop, LinkedIn, or Indeed,
+        normalizes the results, deduplicates by source_url, and saves to Database with real vector embeddings.
+        """
+        from app.models import Opportunity
+        from datetime import datetime, timedelta
+        import random
+
+        if not self.api_key:
+            raise ValueError("FIRECRAWL_API_KEY is missing from environment variables.")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+        
+        search_query = f"{query} hiring site:unstop.com OR site:linkedin.com/jobs OR site:indeed.com"
+        payload = {
+            "query": search_query,
+            "limit": limit,
+            "lang": "en"
+        }
+
         try:
             req = urllib.request.Request(
-                f"{self.base_url}/scrape",
+                f"{self.base_url}/search",
                 data=json.dumps(payload).encode("utf-8"),
                 headers=headers,
                 method="POST"
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                if data.get("success"):
-                    extract_data = data.get("data", {}).get("extract", {})
-                    extract_data["source_url"] = url
-                    return extract_data
+                search_results = data.get("data", [])
         except Exception as e:
-            logger.error(f"Firecrawl API scrape error for {url}: {e}")
-
-        return self._simulated_scrape(url)
-
-    def search_and_ingest(self, db, query: str = "AI Engineer", source: str = "all", limit: int = 5) -> List[Dict[str, Any]]:
-        """
-        Searches Firecrawl for opportunities across Unstop, LinkedIn, or Indeed,
-        normalizes the results, deduplicates by source_url, and saves to Database.
-        """
-        from app.models import Opportunity
-        from app.services.matching import matching_engine
-
-        scraped_items = []
-        target_sources = []
-
-        if source in ["unstop", "all"]:
-            target_sources.append({
-                "source_name": "Unstop",
-                "search_query": f"site:unstop.com {query} competition hackathon internship",
-                "sample_url": f"https://unstop.com/competitions/{query.lower().replace(' ', '-')}-hackathon-2026",
-                "type": "hackathon"
-            })
-        if source in ["linkedin", "all"]:
-            target_sources.append({
-                "source_name": "LinkedIn",
-                "search_query": f"site:linkedin.com/jobs {query} India remote",
-                "sample_url": f"https://www.linkedin.com/jobs/view/{query.lower().replace(' ', '-')}-nvidia-99128",
-                "type": "job"
-            })
-        if source in ["indeed", "all"]:
-            target_sources.append({
-                "source_name": "Indeed",
-                "search_query": f"site:indeed.com {query} India remote",
-                "sample_url": f"https://in.indeed.com/viewjob?jk={query.lower().replace(' ', '')}8819",
-                "type": "internship"
-            })
+            logger.error(f"Firecrawl /v1/search API error: {e}")
+            search_results = []
 
         ingested_opportunities = []
 
-        for target in target_sources[:limit]:
-            source_url = target["sample_url"]
-            
-            # Check for existing duplicate in DB
+        for item in search_results:
+            source_url = item.get("url", "")
+            if not source_url:
+                continue
+
             existing = db.query(Opportunity).filter(Opportunity.source_url == source_url).first()
             if existing:
                 ingested_opportunities.append({
                     "id": existing.id,
                     "title": existing.title,
                     "company": existing.company,
-                    "source": target["source_name"],
-                    "status": "already_exists"
+                    "status": "already_exists",
+                    "source_url": source_url
                 })
                 continue
 
-            # Perform scrape
-            scraped_data = self.scrape_url(source_url)
-            
-            # Create Opportunity DB record
+            # Parse search snippet/title
+            title = item.get("title", f"{query} Listing")
+            description = item.get("description", item.get("markdown", "Live opportunity listing scraped via Firecrawl."))
+            company = title.split(" at ")[-1].split(" - ")[0] if " at " in title else "Featured Tech Partner"
+
             opp = Opportunity(
-                title=scraped_data.get("title", f"{query} Role"),
-                company=scraped_data.get("company", f"{target['source_name']} Partner"),
-                type=scraped_data.get("type", target["type"]),
-                location=scraped_data.get("location", "Bangalore / Remote"),
-                is_remote=scraped_data.get("is_remote", True),
-                salary_range=scraped_data.get("salary_range", "₹85,000 / month"),
-                deadline=datetime.utcnow() + timedelta(days=random.randint(5, 20)),
-                description=scraped_data.get("description", f"Scraped listing for {query} from {target['source_name']}."),
-                requirements=scraped_data.get("requirements", ["Python", "FastAPI", "RAG", "LLMs"]),
+                title=title[:255],
+                company=company[:255],
+                type="job" if "job" in source_url else "hackathon" if "unstop" in source_url else "internship",
+                location="Bangalore / Remote",
+                is_remote=True,
+                salary_range="Competitive Salary",
+                deadline=datetime.utcnow() + timedelta(days=14),
+                description=description,
+                requirements=["Python", "AI", "FastAPI", "React"],
                 source_url=source_url,
                 posted_at=datetime.utcnow()
             )
-            # Generate real Gemini vector embedding for semantic search
+            
+            # Generate real Gemini vector embedding
             from app.services.matching import generate_gemini_embedding
             opp.embedding = generate_gemini_embedding(f"{opp.title} {opp.company} {opp.description}")
 
@@ -141,58 +145,14 @@ class FirecrawlIngestionService:
             db.commit()
             db.refresh(opp)
 
-            logger.info(f"Ingested new scraped opportunity from {target['source_name']}: {opp.title} ({opp.company})")
-
             ingested_opportunities.append({
                 "id": opp.id,
                 "title": opp.title,
                 "company": opp.company,
-                "source": target["source_name"],
                 "status": "newly_ingested",
                 "source_url": opp.source_url
             })
 
         return ingested_opportunities
-
-    def _simulated_scrape(self, url: str) -> Dict[str, Any]:
-        """
-        Simulated structured extraction fallback when FIRECRAWL_API_KEY is not configured.
-        """
-        if "unstop" in url:
-            return {
-                "title": "National AI Agent Challenge 2026",
-                "company": "Unstop & Google Cloud",
-                "type": "hackathon",
-                "location": "Global Remote",
-                "is_remote": True,
-                "salary_range": "$25,000 Prize Pool",
-                "description": "Build agentic workflow applications with explicit scope governance, RAG pipelines, and vector database retrieval.",
-                "requirements": ["Python", "LangGraph", "Gemini API", "MCP", "Agent Security"],
-                "source_url": url
-            }
-        elif "linkedin" in url:
-            return {
-                "title": "Senior AI Systems Developer",
-                "company": "LinkedIn Talent Hub",
-                "type": "job",
-                "location": "Bangalore, India",
-                "is_remote": False,
-                "salary_range": "₹32,00,000 - ₹42,00,000 / yr",
-                "description": "Design enterprise-grade multi-agent networks, FastAPI service gateways, and pgvector semantic retrieval systems.",
-                "requirements": ["Python", "FastAPI", "PostgreSQL", "pgvector", "LangGraph"],
-                "source_url": url
-            }
-        else:
-            return {
-                "title": "Remote AI Research Intern",
-                "company": "Indeed Global Tech",
-                "type": "internship",
-                "location": "Remote",
-                "is_remote": True,
-                "salary_range": "₹90,000 / month",
-                "description": "Work on cutting-edge LLM benchmark evaluation, prompt optimization, and automated application prep.",
-                "requirements": ["Python", "PyTorch", "LLMs", "FastAPI", "React"],
-                "source_url": url
-            }
 
 firecrawl_service = FirecrawlIngestionService()
