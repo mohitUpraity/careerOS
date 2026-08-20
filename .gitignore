@@ -1,0 +1,31 @@
+# Environment Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependencies & Virtual Envs
+node_modules/
+.venv/
+venv/
+ENV/
+env/
+
+# Python Cache & Databases
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.sqlite
+*.sqlite3
+
+# Build & Output Folders
+dist/
+build/
+.output/
+
+# System & IDE files
+.DS_Store
+.vscode/
+.idea/
+*.log

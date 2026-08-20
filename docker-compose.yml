@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database with pgvector extension
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: careeros-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-careeros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careeros_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-careeros}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. FastAPI Backend & LangGraph Orchestrator
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: careeros-backend
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-careeros}:${POSTGRES_PASSWORD:-careeros_secret_password}@db:5432/${POSTGRES_DB:-careeros}
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  # 3. React + TypeScript Mission Control Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: careeros-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # 4. Opportunity MCP Server
+  opportunity-mcp:
+    build:
+      context: ./mcp-servers/opportunity-mcp
+      dockerfile: Dockerfile
+    container_name: careeros-opportunity-mcp
+    restart: always
+    env_file:
+      - .env
+
+  # 5. Resume MCP Server
+  resume-mcp:
+    build:
+      context: ./mcp-servers/resume-mcp
+      dockerfile: Dockerfile
+    container_name: careeros-resume-mcp
+    restart: always
+    env_file:
+      - .env
+
+  # 6. Application MCP Server
+  application-mcp:
+    build:
+      context: ./mcp-servers/application-mcp
+      dockerfile: Dockerfile
+    container_name: careeros-application-mcp
+    restart: always
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:

@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-canvas: #090a0f;
+    --bg-surface: #141622;
+    --bg-surface-hover: #1a1d2c;
+    --border-subtle: #26293b;
+    --color-allow: #10b981;
+    --color-pending: #f59e0b;
+    --color-block: #ef4444;
+    --color-agent: #6366f1;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0e15;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #26293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Glassmorphism Primitives */
+.glass-panel {
+  background: rgba(20, 22, 34, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(38, 41, 59, 0.8);
+}
+
+.glass-panel-elevated {
+  background: rgba(26, 29, 44, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.glass-panel-danger {
+  background: rgba(239, 68, 68, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.glass-panel-success {
+  background: rgba(16, 185, 129, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* React Flow Dark Styling */
+.react-flow__renderer {
+  background: #090a0f !important;
+}
+
+.react-flow__node {
+  border-radius: 12px;
+  padding: 0;
+  font-family: inherit;
+}
+
+.react-flow__controls {
+  background: #141622 !important;
+  border: 1px solid #26293b !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls-button {
+  background: #141622 !important;
+  border-bottom: 1px solid #26293b !important;
+  color: #9ca3af !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #1a1d2c !important;
+  color: #ffffff !important;
+}
