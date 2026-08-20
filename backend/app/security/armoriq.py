@@ -185,13 +185,53 @@ class ArmorIQEngine:
                 reason=reason,
                 timestamp=datetime.utcnow()
             )
-            db.add(audit_event)
-            db.commit()
-            db.refresh(audit_event)
         except Exception as db_err:
             logger.error(f"Failed to log audit event to DB: {db_err}")
             
         return (decision == "ALLOW", reason)
 
+    def capture_plan(self, plan_id: str, user_email: str, goal: str, steps: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        ArmorIQ SDK Method: Canonicalizes an intent plan and generates intent hash.
+        """
+        import hashlib
+        plan_str = json.dumps({"plan_id": plan_id, "user": user_email, "goal": goal, "steps": steps}, sort_keys=True)
+        plan_hash = hashlib.sha256(plan_str.encode('utf-8')).hexdigest()
+        return {
+            "plan_id": plan_id,
+            "user_email": user_email,
+            "goal": goal,
+            "steps": steps,
+            "plan_hash": plan_hash
+        }
+
+    def delegate(
+        self, 
+        plan_id: str, 
+        parent_agent: str, 
+        child_agent: str, 
+        scopes: List[str], 
+        ttl_seconds: int = 3600
+    ) -> str:
+        """
+        ArmorIQ SDK Method: Alias for create_delegation_token.
+        """
+        return self.create_delegation_token(plan_id, parent_agent, child_agent, scopes, ttl_seconds)
+
+    def invoke(
+        self,
+        db,
+        token_str: str,
+        child_agent: str,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        plan_id: str
+    ) -> Tuple[bool, str]:
+        """
+        ArmorIQ SDK Method: Alias for verify_tool_call.
+        """
+        return self.verify_tool_call(db, token_str, child_agent, tool_name, arguments, plan_id)
+
 # Global singleton instance
 armoriq_engine = ArmorIQEngine()
+
