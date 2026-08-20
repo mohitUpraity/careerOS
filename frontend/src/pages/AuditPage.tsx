@@ -2,9 +2,18 @@ import React from 'react';
 import { useSecurityStore } from '../store/useSecurityStore';
 import { History, ShieldCheck, ShieldAlert, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const AuditPage: React.FC = () => {
-  const { auditEvents } = useSecurityStore();
+  const { auditEvents: mockAudit } = useSecurityStore();
+
+  const { data: auditEvents = [] } = useQuery({
+    queryKey: ['auditEvents'],
+    queryFn: () => apiService.getAuditEvents(),
+  });
+
+  const list = auditEvents.length > 0 ? auditEvents : mockAudit;
 
   return (
     <div className="space-y-6">
@@ -20,7 +29,7 @@ export const AuditPage: React.FC = () => {
 
       {/* Timeline Events */}
       <div className="space-y-4 relative before:absolute before:left-6 before:top-4 before:bottom-4 before:w-0.5 before:bg-border-subtle">
-        {auditEvents.map((evt) => (
+        {list.map((evt) => (
           <div key={evt.id} className="relative pl-14 group">
             {/* Timeline Marker Icon */}
             <div

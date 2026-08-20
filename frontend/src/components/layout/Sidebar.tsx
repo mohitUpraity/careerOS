@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
+  Terminal,
   LayoutDashboard,
   Briefcase,
   Trophy,
@@ -20,15 +21,23 @@ import {
   Zap,
 } from 'lucide-react';
 import { mockUser } from '../../services/mockData';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../../services/api';
 import { clsx } from 'clsx';
 
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
+  const { data: user = mockUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => apiService.getMe(),
+  });
+
   const navGroups = [
     {
       title: 'COMMAND CENTER',
       items: [
+        { label: 'AI Command Center', path: '/command', icon: Terminal },
         { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { label: 'Opportunities', path: '/opportunities', icon: Briefcase },
         { label: 'Competitions', path: '/competitions', icon: Trophy },
@@ -135,8 +144,8 @@ export const Sidebar: React.FC = () => {
         <div className={clsx('flex items-center gap-3', collapsed && 'justify-center')}>
           <div className="relative">
             <img
-              src={mockUser.avatarUrl}
-              alt={mockUser.name}
+              src={user.avatarUrl}
+              alt={user.name}
               className="w-8 h-8 rounded-full border border-indigo-500/40 object-cover"
             />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-canvas" />
@@ -144,10 +153,10 @@ export const Sidebar: React.FC = () => {
 
           {!collapsed && (
             <div className="overflow-hidden">
-              <div className="text-xs font-semibold text-white truncate">{mockUser.name}</div>
+              <div className="text-xs font-semibold text-white truncate">{user.name}</div>
               <div className="text-[10px] text-gray-400 font-mono flex items-center gap-1">
                 <Zap className="w-3 h-3 text-emerald-400" />
-                {mockUser.availability} ({mockUser.completeness}%)
+                {user.availability} ({user.completeness}%)
               </div>
             </div>
           )}

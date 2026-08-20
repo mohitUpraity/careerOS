@@ -2,13 +2,20 @@ import React, { useState } from 'react';
 import { mockOpportunities } from '../services/mockData';
 import { Briefcase, Search, Filter, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const OpportunitiesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'All' | 'Job' | 'Internship' | 'Hackathon'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  const filteredOpps = mockOpportunities.filter((opp) => {
+  const { data: opportunities = [] } = useQuery({
+    queryKey: ['opportunities'],
+    queryFn: () => apiService.getOpportunities(),
+  });
+
+  const filteredOpps = (opportunities.length > 0 ? opportunities : mockOpportunities).filter((opp) => {
     const matchesTab = activeTab === 'All' || opp.type === activeTab;
     const matchesSearch =
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

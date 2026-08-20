@@ -2,13 +2,22 @@ import React, { useState } from 'react';
 import { mockOpportunities } from '../services/mockData';
 import { Sliders, ArrowUp, ArrowDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const MatchesPage: React.FC = () => {
   const [remotePriority, setRemotePriority] = useState(50);
   const [salaryPriority, setSalaryPriority] = useState(30);
 
+  const { data: opportunities = [] } = useQuery({
+    queryKey: ['opportunities'],
+    queryFn: () => apiService.getOpportunities(),
+  });
+
+  const opps = opportunities.length > 0 ? opportunities : mockOpportunities;
+
   // Compute re-weighted scores dynamically
-  const reRankedOpps = [...mockOpportunities]
+  const reRankedOpps = [...opps]
     .map((opp) => {
       let scoreBonus = 0;
       if (opp.isRemote) scoreBonus += (remotePriority / 100) * 8;

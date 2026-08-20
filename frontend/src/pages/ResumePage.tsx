@@ -1,9 +1,37 @@
 import React, { useState } from 'react';
 import { mockResumes } from '../services/mockData';
 import { FileText, Sparkles, CheckCircle2, ShieldCheck, ArrowRight, Layers, Eye } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const ResumePage: React.FC = () => {
-  const [selectedVersion, setSelectedVersion] = useState(mockResumes[1]);
+  const { data: resumes = [] } = useQuery({
+    queryKey: ['resumes'],
+    queryFn: () => apiService.getResumes(),
+  });
+
+  const baselineResumeId = resumes.find((r: any) => r.is_baseline)?.id;
+
+  const { data: tailoredVersions = [] } = useQuery({
+    queryKey: ['resumeVersions', baselineResumeId],
+    queryFn: () => apiService.getResumeVersions(baselineResumeId!),
+    enabled: !!baselineResumeId,
+  });
+
+  const allResumes = resumes.length > 0 ? [
+    ...resumes.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      atsScore: 84,
+      lastUpdated: new Date(r.created_at).toLocaleDateString(),
+      isBaseline: true,
+      diffSummary: undefined
+    })),
+    ...tailoredVersions
+  ] : mockResumes;
+
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const selectedVersion = allResumes.find(r => r.id === (localSelectedId || allResumes[0]?.id)) || allResumes[0] || mockResumes[0];
 
   return (
     <div className="space-y-6">
@@ -19,10 +47,10 @@ export const ResumePage: React.FC = () => {
 
       {/* Baseline vs Tailored Version Selector */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {mockResumes.map((res) => (
+        {allResumes.map((res) => (
           <div
             key={res.id}
-            onClick={() => setSelectedVersion(res)}
+            onClick={() => setLocalSelectedId(res.id)}
             className={`glass-panel p-5 rounded-2xl border transition-all cursor-pointer ${
               selectedVersion.id === res.id
                 ? 'border-indigo-500/60 bg-indigo-500/10 shadow-glow'

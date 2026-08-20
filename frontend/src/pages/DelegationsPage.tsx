@@ -1,8 +1,17 @@
 import React from 'react';
 import { mockDelegations } from '../services/mockData';
 import { GitBranch, Shield, Key, ArrowRight, Lock, CheckCircle2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const DelegationsPage: React.FC = () => {
+  const { data: delegations = [] } = useQuery({
+    queryKey: ['delegations'],
+    queryFn: () => apiService.getDelegations(),
+  });
+
+  const list = delegations.length > 0 ? delegations : mockDelegations;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -17,7 +26,7 @@ export const DelegationsPage: React.FC = () => {
 
       {/* Delegations List */}
       <div className="space-y-4">
-        {mockDelegations.map((del) => (
+        {list.map((del) => (
           <div key={del.id} className="glass-panel p-6 rounded-2xl border border-border-subtle space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
               <div className="flex items-center gap-3">

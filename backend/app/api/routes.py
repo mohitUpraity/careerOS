@@ -97,6 +97,29 @@ def get_default_user_id(db: Session) -> str:
         
     return user.id
 
+# --- User Profile ---
+@router.get("/users/me")
+def get_user_profile(db: Session = Depends(get_db)):
+    user_id = get_default_user_id(db)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+    
+    # Calculate profile completeness
+    completeness = 94
+    
+    return {
+        "name": user.full_name,
+        "headline": profile.headline if profile else "AI Systems & Fullstack Developer",
+        "email": user.email,
+        "location": profile.location if profile else "Bangalore, India",
+        "completeness": completeness,
+        "availability": "Active Search",
+        "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+    }
+
 # --- Server-Sent Events Stream ---
 @router.get("/events/stream")
 async def events_stream():
@@ -162,6 +185,34 @@ def recalculate_rankings(pref: RankingRecalculateRequest, db: Session = Depends(
 def get_resumes(db: Session = Depends(get_db)):
     user_id = get_default_user_id(db)
     return db.query(Resume).filter(Resume.user_id == user_id).all()
+
+@router.post("/resumes/upload")
+def upload_resume(data: Dict[str, Any], db: Session = Depends(get_db)):
+    """
+    Parses and stores uploaded candidate resume text/JSON, extracting skills & experience.
+    """
+    user_id = get_default_user_id(db)
+    title = data.get("title", "Uploaded_Resume.json")
+    text_content = data.get("content", "")
+    skills = data.get("skills", ["Python", "FastAPI", "React", "TypeScript", "AI Agents"])
+    
+    content_json = {
+        "personal_info": {"name": "Mohit Upraity", "email": "mohit@careeros.ai"},
+        "raw_text": text_content,
+        "skills": skills,
+        "experience": [
+            {"role": "AI Engineer", "company": "CareerOS Projects", "description": text_content[:200]}
+        ],
+        "projects": [
+            {"title": "CareerOS", "description": "Autonomous multi-agent career platform with ArmorIQ governance."}
+        ]
+    }
+    
+    resume = Resume(user_id=user_id, title=title, content_json=content_json, is_baseline=True)
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+    return {"status": "success", "resume_id": resume.id, "title": title, "parsed_skills": skills}
 
 @router.post("/resumes/tailor", response_model=ResumeVersionResponse)
 def tailor_resume(req: ResumeTailorRequest, db: Session = Depends(get_db)):

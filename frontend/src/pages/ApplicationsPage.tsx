@@ -2,9 +2,18 @@ import React from 'react';
 import { mockApplications } from '../services/mockData';
 import { Kanban, CheckCircle2, ShieldAlert, ArrowRight, Clock } from 'lucide-react';
 import { useSecurityStore } from '../store/useSecurityStore';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const ApplicationsPage: React.FC = () => {
   const { openViolationModal } = useSecurityStore();
+
+  const { data: applications = [] } = useQuery({
+    queryKey: ['applications'],
+    queryFn: () => apiService.getApplications(),
+  });
+
+  const apps = applications.length > 0 ? applications : mockApplications;
 
   const stages = [
     'Discovered',
@@ -30,7 +39,7 @@ export const ApplicationsPage: React.FC = () => {
       {/* Kanban Columns */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => {
-          const appsInStage = mockApplications.filter((a) => a.stage === stage);
+          const appsInStage = apps.filter((a) => a.stage === stage);
 
           return (
             <div key={stage} className="glass-panel p-4 rounded-2xl border border-border-subtle space-y-3 min-w-[200px]">

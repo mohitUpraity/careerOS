@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './components/layout/AppShell';
 
 import { DashboardPage } from './pages/DashboardPage';
+import { CommandCenterPage } from './pages/CommandCenterPage';
 import { OpportunitiesPage } from './pages/OpportunitiesPage';
 import { OpportunityDetailPage } from './pages/OpportunityDetailPage';
 import { ResumePage } from './pages/ResumePage';
@@ -23,7 +24,8 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppShell />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/command" replace />} />
+            <Route path="command" element={<CommandCenterPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="opportunities" element={<OpportunitiesPage />} />
             <Route path="opportunities/:id" element={<OpportunityDetailPage />} />

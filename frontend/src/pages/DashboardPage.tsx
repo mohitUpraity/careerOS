@@ -5,10 +5,27 @@ import { Briefcase, Zap, Star, CheckCircle2, ShieldAlert, Play, ArrowRight } fro
 import { mockOpportunities } from '../services/mockData';
 import { useNavigate } from 'react-router-dom';
 import { useSecurityStore } from '../store/useSecurityStore';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { openViolationModal } = useSecurityStore();
+
+  const { data: opportunities = [] } = useQuery({
+    queryKey: ['opportunities'],
+    queryFn: () => apiService.getOpportunities(),
+  });
+
+  const { data: applications = [] } = useQuery({
+    queryKey: ['applications'],
+    queryFn: () => apiService.getApplications(),
+  });
+
+  const { data: securityEvents = [] } = useQuery({
+    queryKey: ['securityEvents'],
+    queryFn: () => apiService.getSecurityEvents(),
+  });
 
   return (
     <div className="space-y-6">
@@ -39,15 +56,15 @@ export const DashboardPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Opportunities Found"
-          value="127"
+          value={opportunities.length > 0 ? opportunities.length.toString() : "127"}
           subtitle="Across 4 portals"
           icon={Briefcase}
-          trend="+18 today"
+          trend="+3 today"
           onClick={() => navigate('/opportunities')}
         />
         <MetricCard
           title="Strong Matches"
-          value="43"
+          value={opportunities.length > 0 ? opportunities.filter(o => o.matchScore >= 85).length.toString() : "43"}
           subtitle="Score > 85%"
           icon={Zap}
           variant="brand"
@@ -55,7 +72,7 @@ export const DashboardPage: React.FC = () => {
         />
         <MetricCard
           title="High Confidence"
-          value="12"
+          value={opportunities.length > 0 ? opportunities.filter(o => o.eligibilityScore === 100).length.toString() : "12"}
           subtitle="Verified evidence"
           icon={Star}
           variant="success"
@@ -63,14 +80,14 @@ export const DashboardPage: React.FC = () => {
         />
         <MetricCard
           title="Applications Ready"
-          value="5"
-          subtitle="Form fields prepared"
+          value={applications.length > 0 ? applications.filter(a => a.stage === 'Application Ready').length.toString() : "5"}
+          subtitle="Fields prepared"
           icon={CheckCircle2}
           onClick={() => navigate('/applications')}
         />
         <MetricCard
           title="Blocked Action"
-          value="1"
+          value={securityEvents.length > 0 ? securityEvents.length.toString() : "1"}
           subtitle="Scope violation alert"
           icon={ShieldAlert}
           variant="danger"
@@ -101,7 +118,7 @@ export const DashboardPage: React.FC = () => {
           Top AI Opportunity Fits
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {mockOpportunities.slice(0, 2).map((opp) => (
+          {(opportunities.length > 0 ? opportunities : mockOpportunities).slice(0, 2).map((opp) => (
             <div
               key={opp.id}
               onClick={() => navigate(`/opportunities/${opp.id}`)}

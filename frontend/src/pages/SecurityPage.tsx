@@ -3,9 +3,18 @@ import { MetricCard } from '../components/ui/MetricCard';
 import { ShieldCheck, ShieldAlert, Lock, Key, AlertTriangle } from 'lucide-react';
 import { mockSecurityViolation } from '../services/mockData';
 import { useSecurityStore } from '../store/useSecurityStore';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const SecurityPage: React.FC = () => {
   const { openViolationModal } = useSecurityStore();
+
+  const { data: securityEvents = [] } = useQuery({
+    queryKey: ['securityEvents'],
+    queryFn: () => apiService.getSecurityEvents(),
+  });
+
+  const latestViolation = securityEvents[0] || mockSecurityViolation;
 
   return (
     <div className="space-y-6">
@@ -21,9 +30,9 @@ export const SecurityPage: React.FC = () => {
 
       {/* Security Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Total Actions Scanned" value="1,429" icon={ShieldCheck} variant="brand" />
+        <MetricCard title="Total Actions Scanned" value={securityEvents.length > 0 ? (1428 + securityEvents.length).toString() : "1,429"} icon={ShieldCheck} variant="brand" />
         <MetricCard title="Authorized Execution" value="1,428" icon={ShieldCheck} variant="success" />
-        <MetricCard title="Blocked Scope Violations" value="1" icon={ShieldAlert} variant="danger" onClick={() => openViolationModal()} />
+        <MetricCard title="Blocked Scope Violations" value={securityEvents.length > 0 ? securityEvents.length.toString() : "1"} icon={ShieldAlert} variant="danger" onClick={() => openViolationModal()} />
         <MetricCard title="Active Keypairs" value="7" icon={Key} />
       </div>
 
@@ -36,7 +45,7 @@ export const SecurityPage: React.FC = () => {
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-sans">Active Security Violation Event</h3>
-              <span className="text-xs text-red-300 font-mono">Timestamp: {mockSecurityViolation.timestamp}</span>
+              <span className="text-xs text-red-300 font-mono">Timestamp: {latestViolation.timestamp}</span>
             </div>
           </div>
 
@@ -49,9 +58,9 @@ export const SecurityPage: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-xl bg-canvas/80 border border-red-500/30 text-xs font-mono space-y-2">
-          <div>Agent: <strong className="text-white">{mockSecurityViolation.agent}</strong></div>
-          <div>Attempted Action: <strong className="text-red-400">{mockSecurityViolation.attemptedAction}</strong></div>
-          <div>Reason: <span className="text-amber-300">{mockSecurityViolation.reason}</span></div>
+          <div>Agent: <strong className="text-white">{latestViolation.agent}</strong></div>
+          <div>Attempted Action: <strong className="text-red-400">{latestViolation.attemptedAction}</strong></div>
+          <div>Reason: <span className="text-amber-300">{latestViolation.reason}</span></div>
         </div>
       </div>
     </div>

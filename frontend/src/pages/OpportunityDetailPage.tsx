@@ -3,13 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { mockOpportunities } from '../services/mockData';
 import { ArrowLeft, CheckCircle2, AlertCircle, XCircle, FileText, Send, Sparkles, ShieldAlert } from 'lucide-react';
 import { useSecurityStore } from '../store/useSecurityStore';
+import { useQuery } from '@tanstack/react-query';
+import { apiService } from '../services/api';
 
 export const OpportunityDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { openViolationModal } = useSecurityStore();
 
-  const opportunity = mockOpportunities.find((o) => o.id === id) || mockOpportunities[0];
+  const { data: opportunities = [] } = useQuery({
+    queryKey: ['opportunities'],
+    queryFn: () => apiService.getOpportunities(),
+  });
+
+  const opportunity = opportunities.find((o) => o.id === id) || mockOpportunities.find((o) => o.id === id) || mockOpportunities[0];
 
   return (
     <div className="space-y-6">
