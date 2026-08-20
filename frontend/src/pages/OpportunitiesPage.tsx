@@ -1,26 +1,39 @@
 import React, { useState } from 'react';
-import { mockOpportunities } from '../services/mockData';
-import { Briefcase, Search, Filter, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
+import { Briefcase, Search, Filter, ArrowRight, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '../services/api';
 
 export const OpportunitiesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'All' | 'Job' | 'Internship' | 'Hackathon'>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScraping, setIsScraping] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: opportunities = [] } = useQuery({
     queryKey: ['opportunities'],
     queryFn: () => apiService.getOpportunities(),
   });
 
-  const filteredOpps = (opportunities.length > 0 ? opportunities : mockOpportunities).filter((opp) => {
-    const matchesTab = activeTab === 'All' || opp.type === activeTab;
+  const handleLiveScrape = async () => {
+    setIsScraping(true);
+    try {
+      await apiService.scrapeOpportunities("AI Engineer", "all");
+      await queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
+  const filteredOpps = opportunities.filter((opp) => {
+    const matchesTab = activeTab === 'All' || opp.type.toLowerCase() === activeTab.toLowerCase();
     const matchesSearch =
       opp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       opp.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      opp.skills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      (opp.requirements || opp.skills || []).some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesTab && matchesSearch;
   });
 
@@ -30,11 +43,22 @@ export const OpportunitiesPage: React.FC = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
-            Opportunity Intelligence Catalog
+            Live Opportunity Catalog
           </h1>
           <p className="text-xs text-gray-400 font-mono mt-1">
-            Normalized, deduplicated, and candidate-matched career opportunities.
+            Real-time web listings scraped via Firecrawl API across Unstop, LinkedIn, and Indeed.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLiveScrape}
+            disabled={isScraping}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-glow transition disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isScraping ? 'animate-spin' : ''}`} />
+            {isScraping ? 'Scraping Live Web...' : 'Scrape Live Jobs via Firecrawl'}
+          </button>
         </div>
 
         {/* Tab Filters */}

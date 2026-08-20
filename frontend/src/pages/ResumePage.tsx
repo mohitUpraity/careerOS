@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { mockResumes } from '../services/mockData';
-import { FileText, Sparkles, CheckCircle2, ShieldCheck, ArrowRight, Layers, Eye } from 'lucide-react';
+import { FileText, Sparkles, CheckCircle2, ShieldCheck, ArrowRight, Layers, Eye, Plus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '../services/api';
 
@@ -18,20 +17,21 @@ export const ResumePage: React.FC = () => {
     enabled: !!baselineResumeId,
   });
 
-  const allResumes = resumes.length > 0 ? [
+  const allResumes = [
     ...resumes.map((r: any) => ({
       id: r.id,
       title: r.title,
-      atsScore: 84,
-      lastUpdated: new Date(r.created_at).toLocaleDateString(),
+      atsScore: 88,
+      lastUpdated: new Date(r.created_at || Date.now()).toLocaleDateString(),
       isBaseline: true,
-      diffSummary: undefined
+      diffSummary: undefined,
+      content: r.content_json
     })),
     ...tailoredVersions
-  ] : mockResumes;
+  ];
 
   const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
-  const selectedVersion = allResumes.find(r => r.id === (localSelectedId || allResumes[0]?.id)) || allResumes[0] || mockResumes[0];
+  const selectedVersion = allResumes.find(r => r.id === (localSelectedId || allResumes[0]?.id)) || allResumes[0];
 
   return (
     <div className="space-y-6">

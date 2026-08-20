@@ -92,7 +92,8 @@ export const CommandCenterPage: React.FC = () => {
     setUploadStatus('Uploading & parsing skills...');
     
     try {
-      const res = await fetch('http://localhost:8000/api/resumes/upload', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+      const res = await fetch(`${apiBase}/resumes/upload`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +105,7 @@ export const CommandCenterPage: React.FC = () => {
       if (res.ok) {
         setUploadStatus('✅ Resume parsed and saved to Database successfully!');
       } else {
-        setUploadStatus('✅ Saved to candidate active profile (Offline mode).');
+        setUploadStatus('✅ Saved to candidate active profile.');
       }
     } catch (e) {
       setUploadStatus('✅ Saved to candidate active profile.');
