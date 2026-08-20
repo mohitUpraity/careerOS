@@ -17,13 +17,19 @@ import {
   mockSecurityViolation 
 } from './mockData';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const getBaseUrl = () => {
+  let base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').trim().replace(/\/+$/, '');
+  if (!base.endsWith('/api')) {
+    base = `${base}/api`;
+  }
+  return base;
+};
 
 export const apiService = {
   // --- User Profile ---
   async getMe(): Promise<UserProfile> {
     try {
-      const res = await fetch(`${API_BASE_URL}/users/me`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/users/me`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       return await res.json();
     } catch (e) {
@@ -35,7 +41,7 @@ export const apiService = {
   // --- Opportunities ---
   async getOpportunities(): Promise<Opportunity[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/opportunities`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/opportunities`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((item: any) => ({
@@ -69,7 +75,7 @@ export const apiService = {
   // --- Matching & Recalculate ---
   async getMatches(): Promise<any[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/matches`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/matches`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       return await res.json();
     } catch (e) {
@@ -79,7 +85,7 @@ export const apiService = {
 
   async recalculateRankings(preferences: Record<string, number>): Promise<any[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/ranking/recalculate`, {
+      const res = await fetch(`${getBaseUrl()}/ranking/recalculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),
@@ -95,7 +101,7 @@ export const apiService = {
   // --- Resumes & Tailoring ---
   async getResumes(): Promise<any[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/resumes`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/resumes`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       return await res.json();
     } catch (e) {
@@ -105,7 +111,7 @@ export const apiService = {
 
   async getResumeVersions(resumeId: string): Promise<ResumeVersion[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/resumes/${resumeId}/versions`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/resumes/${resumeId}/versions`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((v: any) => ({
@@ -125,7 +131,7 @@ export const apiService = {
 
   async tailorResume(opportunityId: string, resumeId?: string): Promise<ResumeVersion> {
     try {
-      const res = await fetch(`${API_BASE_URL}/resumes/tailor`, {
+      const res = await fetch(`${getBaseUrl()}/resumes/tailor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ opportunity_id: opportunityId, resume_id: resumeId }),
@@ -151,7 +157,7 @@ export const apiService = {
   // --- Applications ---
   async getApplications(): Promise<ApplicationItem[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/applications`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/applications`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((item: any) => ({
@@ -173,7 +179,7 @@ export const apiService = {
 
   async prepareApplication(opportunityId: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE_URL}/applications/prepare`, {
+      const res = await fetch(`${getBaseUrl()}/applications/prepare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ opportunity_id: opportunityId }),
@@ -188,7 +194,7 @@ export const apiService = {
 
   async approveApplication(applicationId: string, approved: boolean): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE_URL}/applications/${applicationId}/approve`, {
+      const res = await fetch(`${getBaseUrl()}/applications/${applicationId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approved }),
@@ -204,7 +210,7 @@ export const apiService = {
   // --- Security & Audit ---
   async getDelegations(): Promise<DelegationRecord[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/delegations`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/delegations`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((d: any) => ({
@@ -225,7 +231,7 @@ export const apiService = {
 
   async getAuditEvents(): Promise<AuditEventRecord[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/audit`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/audit`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((a: any) => ({
@@ -248,7 +254,7 @@ export const apiService = {
 
   async getSecurityEvents(): Promise<SecurityEvent[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/security/events`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`${getBaseUrl()}/security/events`, { signal: AbortSignal.timeout(2000) });
       if (!res.ok) throw new Error('Backend offline');
       const data = await res.json();
       return data.map((e: any) => ({

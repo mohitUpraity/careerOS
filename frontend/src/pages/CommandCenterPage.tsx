@@ -54,8 +54,13 @@ export const CommandCenterPage: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-      const res = await fetch(`${apiBase}/chat`, {
+      let base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').trim().replace(/\/+$/, '');
+      if (!base.endsWith('/api')) {
+        base = `${base}/api`;
+      }
+      const chatUrl = `${base}/chat`;
+
+      const res = await fetch(chatUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: cmd })
@@ -92,8 +97,13 @@ export const CommandCenterPage: React.FC = () => {
     setUploadStatus('Uploading & parsing skills...');
     
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-      const res = await fetch(`${apiBase}/resumes/upload`, {
+      let base = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api').trim().replace(/\/+$/, '');
+      if (!base.endsWith('/api')) {
+        base = `${base}/api`;
+      }
+      const uploadUrl = `${base}/resumes/upload`;
+
+      const res = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
