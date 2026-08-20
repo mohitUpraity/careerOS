@@ -89,7 +89,7 @@ def seed_opportunities(db):
             logger.info(f"Seeded opportunity: {opp.title} at {opp.company}")
 
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
     
@@ -133,7 +133,25 @@ def on_startup():
             logger.info("Calculated and seeded initial matches.")
     finally:
         db.close()
+        
+    # Start internal keep-alive loop to prevent Render free-tier sleep
+    import asyncio, urllib.request
+    async def keep_alive():
+        while True:
+            await asyncio.sleep(240) # Every 4 minutes
+            try:
+                # Ping health endpoint
+                urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=5)
+                logger.info("Keep-alive ping sent to stay awake.")
+            except Exception:
+                pass
+    asyncio.create_task(keep_alive())
 
 @app.get("/")
 def read_root():
     return {"status": "online", "service": "CareerOS Backend", "engine": "FastAPI"}
+
+@app.get("/health")
+def root_health():
+    return {"status": "healthy", "service": "CareerOS Backend"}
+

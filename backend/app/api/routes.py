@@ -22,6 +22,19 @@ from app.agents.workflows import event_broadcaster, AgentWorkflowOrchestrator
 
 router = APIRouter(prefix="/api")
 
+@router.get("/health")
+def health_check():
+    """
+    Keep-alive health endpoint for Render free tier.
+    """
+    from datetime import datetime
+    return {
+        "status": "healthy",
+        "service": "CareerOS Backend API",
+        "timestamp": datetime.utcnow().isoformat(),
+        "keep_alive": True
+    }
+
 # --- Helper to get default user (Mohit) ---
 def get_default_user_id(db: Session) -> str:
     user = db.query(User).filter(User.email == "mohit@careeros.ai").first()
