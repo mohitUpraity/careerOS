@@ -59,16 +59,23 @@ class AgentWorkflowOrchestrator:
         Simulates execution delays so the frontend can animate state transitions.
         Triggers an ArmorIQ Scope Violation on ApplicationAgent.submit_application().
         """
-        # 1. Initialize Plan
+        # 1. Initialize Plan & Capture ArmorIQ Intent
         plan = Plan(user_id=user_id, intent=intent, status="active")
         db_session.add(plan)
         db_session.commit()
         db_session.refresh(plan)
         plan_id = plan.id
         
+        captured_intent = armoriq_engine.capture_plan(
+            plan_id=plan_id,
+            user_email="mohit@careeros.ai",
+            goal=intent,
+            steps=[{"action": "prepare_and_submit", "target": opportunity_id}]
+        )
+        
         event_broadcaster.publish("agent.started", {
             "agent": "Commander",
-            "message": f"Commander initialized plan PLAN-{plan_id[:8]} for user intent: '{intent}'",
+            "message": f"Commander captured plan intent PLAN-{plan_id[:8]} [hash: {captured_intent['plan_hash'][:12]}] for: '{intent}'",
             "plan_id": plan_id
         })
         await asyncio.sleep(0.8)
@@ -84,7 +91,7 @@ class AgentWorkflowOrchestrator:
         
         tokens = {}
         for agent, agent_scopes in scopes.items():
-            token = armoriq_engine.create_delegation_token(
+            token = armoriq_engine.delegate(
                 plan_id=plan_id,
                 parent_agent="Commander",
                 child_agent=agent,
@@ -123,7 +130,7 @@ class AgentWorkflowOrchestrator:
         await asyncio.sleep(1.2)
         
         # Verify Discovery tool call
-        allowed, reason = armoriq_engine.verify_tool_call(
+        allowed, reason = armoriq_engine.invoke(
             db_session, tokens["DiscoveryAgent"], "DiscoveryAgent", "search_jobs", {}, plan_id
         )
         if allowed:
